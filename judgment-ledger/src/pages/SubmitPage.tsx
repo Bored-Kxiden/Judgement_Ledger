@@ -1,12 +1,18 @@
 import { useState } from 'react'
-import { CheckCircle2, GitBranch, GitCommitHorizontal, ListChecks, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, GitBranch, GitCommitHorizontal, ListChecks, Loader2, PackageCheck } from 'lucide-react'
 import { Avatar } from '../components/Avatar'
 import { DiffView } from '../components/DiffView'
 import { StatusBadge } from '../components/StatusBadge'
 import { riskySubmission, trivialSubmission, trustBoundaries } from '../data/mockData'
 import type { Submission } from '../data/mockData'
+import { submitDeploy } from '../lib/api'
+import type { SubmitDeployResponse } from '../lib/api'
 
-type Stage = 'idle' | 'running' | 'done'
+type Stage = 'idle' | 'running' | 'done' | 'error'
+
+function generateSubmissionId() {
+  return `SUB-${Date.now().toString().slice(-8)}`
+}
 
 const STEPS = [
   { title: 'Classify the change', body: 'Intake Agent reads the diff, assigns a risk category, and computes blast radius against the service dependency graph.' },
@@ -17,20 +23,39 @@ const STEPS = [
 export default function SubmitPage() {
   const [sample, setSample] = useState<Submission>(riskySubmission)
   const [stage, setStage] = useState<Stage>('idle')
+  const [result, setResult] = useState<SubmitDeployResponse | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const boundary = trustBoundaries.find((t) => t.category === sample.category)!
-  const meetsSample = sample.matchedHistoryCount >= boundary.minSampleRequired
-  const meetsConfidence = sample.confidence >= boundary.confidenceFloor
-  const willAutoApprove = boundary.status === 'auto-approve trusted' && meetsSample && meetsConfidence
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setStage('running')
-    setTimeout(() => setStage('done'), 1100)
+    setSubmitError(null)
+    try {
+      const response = await submitDeploy({
+        id: generateSubmissionId(),
+        author: sample.author,
+        authorInitials: sample.authorInitials,
+        service: sample.service,
+        branch: sample.branch,
+        commitRef: sample.commit,
+        testsPassed: sample.testsPassed,
+        testsTotal: sample.testsTotal,
+        files: sample.files,
+      })
+      setResult(response)
+      setStage('done')
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Submission failed')
+      setStage('error')
+    }
   }
 
   function pickSample(s: Submission) {
     setSample(s)
     setStage('idle')
+    setResult(null)
+    setSubmitError(null)
   }
 
   return (
@@ -105,21 +130,28 @@ export default function SubmitPage() {
             {stage === 'running' ? (
               <div className="flex items-center gap-2 text-sm text-fg-muted">
                 <Loader2 size={16} className="animate-spin text-amber-emphasis" />
-                Running Intake → Threshold evaluation…
+                Submitting to the Judgment Ledger and triggering the Yoxa workflow…
               </div>
-            ) : willAutoApprove ? (
+            ) : stage === 'error' ? (
+              <DecisionReceipt
+                tone="red"
+                icon={<AlertTriangle size={18} className="text-red-emphasis" />}
+                title="Submission failed"
+                reason={submitError ?? 'Unknown error'}
+              />
+            ) : result?.workflowTriggered ? (
               <DecisionReceipt
                 tone="teal"
-                icon={<ShieldCheck size={18} className="text-teal-emphasis" />}
-                title="Approved and shipping"
-                reason={`Category "${sample.category}" is auto-approve trusted with ${sample.matchedHistoryCount} matching historical entries and ${(sample.confidence * 100).toFixed(0)}% confidence, above the ${(boundary.confidenceFloor * 100).toFixed(0)}% floor. Deploy pipeline triggered.`}
+                icon={<PackageCheck size={18} className="text-teal-emphasis" />}
+                title="Submitted — workflow triggered"
+                reason={`Recorded as ${result.submission.id}${result.submission.workflow_run_id ? ` (Yoxa run ${result.submission.workflow_run_id})` : ''}. The Intake and Threshold agents now decide asynchronously — check the Escalations or Policy Review tabs once a decision lands.`}
               />
             ) : (
               <DecisionReceipt
                 tone="amber"
-                icon={<Sparkles size={18} className="text-amber-emphasis" />}
-                title="Escalated for review"
-                reason={`Category "${sample.category}" is currently escalation-required (${boundary.currentSampleSize}/${boundary.minSampleRequired} evidence samples, ${boundary.corrections} human correction${boundary.corrections === 1 ? '' : 's'} on record). Routed to the Senior Approver queue — see Escalations tab.`}
+                icon={<AlertTriangle size={18} className="text-amber-emphasis" />}
+                title="Submitted, but the Yoxa trigger failed"
+                reason={`Recorded as ${result?.submission.id}. The submission is saved, but the workflow wasn't started: ${result?.workflowTriggerError ?? 'unknown error'}. Safe to retry.`}
               />
             )}
           </div>
@@ -179,13 +211,13 @@ function DecisionReceipt({
   title,
   reason,
 }: {
-  tone: 'teal' | 'amber'
+  tone: 'teal' | 'amber' | 'red'
   icon: React.ReactNode
   title: string
   reason: string
 }) {
-  const border = tone === 'teal' ? 'border-teal/40' : 'border-amber/40'
-  const bg = tone === 'teal' ? 'bg-teal-subtle' : 'bg-amber-subtle'
+  const border = tone === 'teal' ? 'border-teal/40' : tone === 'amber' ? 'border-amber/40' : 'border-red/40'
+  const bg = tone === 'teal' ? 'bg-teal-subtle' : tone === 'amber' ? 'bg-amber-subtle' : 'bg-red-subtle'
   return (
     <div className={`flex gap-3 rounded-md border ${border} ${bg} p-3`}>
       {icon}

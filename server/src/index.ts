@@ -16,15 +16,18 @@ app.use(express.json())
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
-app.use('/api', apiKeyAuth)
-
+// submissionsRouter is the app's own public-facing seam (engineer submissions,
+// Senior Approver decisions) — no user-auth system exists yet, but it must
+// never require the Yoxa connector key, since that would ship a real secret
+// to the browser. Every other router is a Yoxa-to-server tool call and stays
+// behind apiKeyAuth.
 app.use('/api/submissions', submissionsRouter)
-app.use('/api/deploys', intakeRouter)
-app.use('/api/deploys', deployRouter)
-app.use('/api/categories', categoriesRouter)
-app.use('/api/policy-proposals', policyProposalsRouter)
-app.use('/api/ledger', ledgerRouter)
-app.use('/api/feedback', feedbackRouter)
+app.use('/api/deploys', apiKeyAuth, intakeRouter)
+app.use('/api/deploys', apiKeyAuth, deployRouter)
+app.use('/api/categories', apiKeyAuth, categoriesRouter)
+app.use('/api/policy-proposals', apiKeyAuth, policyProposalsRouter)
+app.use('/api/ledger', apiKeyAuth, ledgerRouter)
+app.use('/api/feedback', apiKeyAuth, feedbackRouter)
 
 app.listen(env.port, () => {
   console.log(`judgment-ledger-server listening on http://localhost:${env.port}`)
