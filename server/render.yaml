@@ -21,3 +21,7 @@ services:
         sync: false
       - key: CONNECTOR_API_KEY
         sync: false
+      - key: YOXA_TRIGGER_URL
+        sync: false
+      - key: YOXA_DEPLOYMENT_SECRET
+        sync: false

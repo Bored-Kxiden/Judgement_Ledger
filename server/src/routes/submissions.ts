@@ -92,8 +92,16 @@ submissionsRouter.post('/', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message })
 
   const trigger = await triggerYoxaWorkflow(id, service, author, files)
+  let workflowRunIdPersistError: string | null = null
   if (trigger.ok && trigger.workflowRunId) {
-    await supabase.from('submissions').update({ workflow_run_id: trigger.workflowRunId }).eq('id', id)
+    const { error: runIdErr } = await supabase
+      .from('submissions')
+      .update({ workflow_run_id: trigger.workflowRunId })
+      .eq('id', id)
+    if (runIdErr) {
+      console.error(`Failed to persist workflow_run_id for ${id}:`, runIdErr.message)
+      workflowRunIdPersistError = runIdErr.message
+    }
   }
 
   res.status(201).json({
@@ -101,6 +109,7 @@ submissionsRouter.post('/', async (req, res) => {
     files: files ?? [],
     workflowTriggered: trigger.ok,
     workflowTriggerError: trigger.ok ? null : trigger.error,
+    workflowRunIdPersistError,
   })
 })
 
