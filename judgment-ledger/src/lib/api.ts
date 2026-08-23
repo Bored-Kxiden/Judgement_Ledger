@@ -43,6 +43,7 @@ export interface ApprovalRequest {
   answered_by: string | null
   answered_at: string | null
   created_at: string
+  kind: 'escalation' | 'policy_review'
   submission: {
     id: string
     author: string

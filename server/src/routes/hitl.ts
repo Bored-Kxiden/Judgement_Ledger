@@ -111,9 +111,22 @@ hitlRouter.post('/webhook', raw({ type: '*/*' }), async (req, res) => {
  * The approval queue. Each Yoxa request is joined to its originating
  * submission by workflow_run_id — the stable cross-system link — so the UI
  * can show what the approval is actually about, not just Yoxa's title.
+ *
+ * `kind` splits per-deploy escalations from weekly policy-review approvals.
+ * There's no field in Yoxa's payload marking which is which, so this uses
+ * the one fact the schema guarantees: only a real deploy submission (via the
+ * entry trigger) ever writes a row into `submissions`. A policy-review cycle
+ * runs on Yoxa's own schedule and never does, so its workflow_run_id will
+ * never match one. `escalation` = matched a submission, `policy_review` =
+ * didn't. Default returns only `escalation`, since that's what this page shows.
  */
 hitlRouter.get('/requests', async (req, res) => {
   const status = (req.query.status as string | undefined) ?? 'pending'
+  const kind = (req.query.kind as string | undefined) ?? 'escalation'
+  if (kind !== 'escalation' && kind !== 'policy_review' && kind !== 'all') {
+    return res.status(400).json({ error: 'kind must be escalation, policy_review, or all' })
+  }
+
   const { data: requests, error } = await supabase
     .from('hitl_requests')
     .select('request_id, workflow_run_id, title, description, options, status, selected_option_id, override_message, answered_by, answered_at, created_at')
@@ -134,12 +147,13 @@ hitlRouter.get('/requests', async (req, res) => {
     )
   }
 
-  res.json({
-    requests: (requests ?? []).map((r) => ({
-      ...r,
-      submission: r.workflow_run_id ? submissionsByRunId[r.workflow_run_id] ?? null : null,
-    })),
+  const enriched = (requests ?? []).map((r) => {
+    const submission = r.workflow_run_id ? submissionsByRunId[r.workflow_run_id] ?? null : null
+    return { ...r, submission, kind: submission ? ('escalation' as const) : ('policy_review' as const) }
   })
+
+  const filtered = kind === 'all' ? enriched : enriched.filter((r) => r.kind === kind)
+  res.json({ requests: filtered })
 })
 
 /**
