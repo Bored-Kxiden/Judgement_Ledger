@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Ship Deployment
+  version: "1.0.0"
+  description: >
+    Connector for "trigger_deploy_and_notify_engineer". Records the ship
+    decision for an auto-approved submission. NOTE: the underlying route
+    currently stubs the real CI/CD pipeline call and engineer notification —
+    see server/src/routes/deploy.ts — so a 200 here does not yet mean a real
+    deploy fired.
+servers:
+  - url: https://judgment-ledger-server.onrender.com
+security:
+  - apiKeyAuth: []
+paths:
+  /api/deploys/{submissionId}/ship:
+    post:
+      operationId: shipDeployment
+      summary: Trigger the deploy pipeline and notify the submitting engineer
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          description: The submission ID being shipped.
+          schema:
+            type: string
+          example: SUB-91501
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  description: Plain-language reason the Threshold Agent auto-approved this deploy.
+                confidence:
+                  type: number
+                category:
+                  type: string
+      responses:
+        '200':
+          description: Ship recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipResponse'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Submission:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        service:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+          enum: [submitted, auto-approved, escalated, approved, blocked, more_signal, shipped]
+        confidence:
+          type: number
+        decision_reason:
+          type: string
+      required:
+        - id
+        - author
+        - service
+        - status
+    ShipResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        submission:
+          $ref: '#/components/schemas/Submission'
+        pipelineAccepted:
+          type: boolean
+      required:
+        - submission
+        - pipelineAccepted

@@ -1,0 +1,86 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Submit Policy Proposal
+  version: "1.0.0"
+  description: >
+    Connector for the "Submit trust-boundary proposal" generated-output tool.
+    Receives the generated PDF plus proposal metadata and queues it for
+    Engineering Leadership review. This tool can only submit for human
+    review — it never writes to a category's trust status itself.
+servers:
+  - url: https://judgment-ledger-server.onrender.com   # provisional — confirm against the real Render URL once deployed
+security:
+  - apiKeyAuth: []
+paths:
+  /api/policy-proposals:
+    post:
+      operationId: submitPolicyProposal
+      summary: Submit an evidence-backed trust-boundary proposal for human review
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PolicyProposalUpload'
+      responses:
+        '201':
+          description: Proposal queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyProposalResponse'
+        '400':
+          description: category or recommendation missing/invalid
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    PolicyProposalUpload:
+      type: object
+      properties:
+        category:
+          type: string
+        recommendation:
+          type: string
+          enum: [expand trust, restore trust]
+        reasoning:
+          type: string
+        pdf:
+          type: string
+          format: binary
+      required:
+        - category
+        - recommendation
+        - pdf
+    PolicyProposal:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        recommendation:
+          type: string
+          enum: [expand trust, restore trust]
+        reasoning:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        proposal_pdf_url:
+          type: string
+      required:
+        - id
+        - category
+        - recommendation
+        - status
+    PolicyProposalResponse:
+      type: object
+      properties:
+        proposal:
+          $ref: '#/components/schemas/PolicyProposal'
+      required:
+        - proposal

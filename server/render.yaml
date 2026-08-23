@@ -1,0 +1,23 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# In the Render dashboard: New -> Blueprint -> point at this repo, root "server".
+# Render reads this file and provisions the service below. Env vars marked
+# `sync: false` are prompted for in Render's UI, never stored in this file.
+
+services:
+  - type: web
+    name: judgment-ledger-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CONNECTOR_API_KEY
+        sync: false

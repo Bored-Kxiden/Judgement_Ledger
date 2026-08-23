@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Intake Context
+  version: "1.0.0"
+  description: >
+    Connector for the Intake Agent's "Intake summary" tool. Returns blast
+    radius (from the service dependency graph) and matched Judgment Ledger
+    history for the category the agent has already assigned to a submission.
+servers:
+  - url: https://judgment-ledger-server.onrender.com
+security:
+  - apiKeyAuth: []
+paths:
+  /api/deploys/{submissionId}/intake-context:
+    get:
+      operationId: getIntakeContext
+      summary: Get blast radius and matched Ledger history for a submission's category
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          description: The submission ID to fetch intake context for.
+          schema:
+            type: string
+          example: SUB-88214
+        - name: category
+          in: query
+          required: true
+          description: The risk category the Intake Agent has assigned to this change.
+          schema:
+            type: string
+          example: payments logic
+      responses:
+        '200':
+          description: Intake context for the submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeContext'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    LedgerHistoryEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        submission_id:
+          type: string
+        decision:
+          type: string
+        confidence:
+          type: number
+        evidence_sample_size:
+          type: integer
+        human_corrected:
+          type: boolean
+        outcome:
+          type: string
+        verdict:
+          type: string
+      required:
+        - submission_id
+        - decision
+        - confidence
+        - evidence_sample_size
+        - human_corrected
+        - outcome
+        - verdict
+    TrustBoundary:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          type: string
+        status:
+          type: string
+          enum: [auto-approve trusted, escalation required]
+        min_sample_required:
+          type: integer
+        current_sample_size:
+          type: integer
+        confidence_floor:
+          type: number
+        corrections:
+          type: integer
+        correction_severity:
+          type: string
+          enum: [none, minor, severe]
+        recommendation:
+          type: string
+          enum: [expand trust, restore trust, hold as-is]
+        reasoning:
+          type: string
+      required:
+        - category
+        - status
+        - min_sample_required
+        - current_sample_size
+        - confidence_floor
+        - corrections
+        - correction_severity
+        - recommendation
+    IntakeContext:
+      type: object
+      additionalProperties: false
+      properties:
+        submissionId:
+          type: string
+        category:
+          type: string
+        blastRadius:
+          type: integer
+        affectedServices:
+          type: array
+          items:
+            type: string
+        matchedHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerHistoryEntry'
+        matchedHistoryCount:
+          type: integer
+        trustBoundary:
+          $ref: '#/components/schemas/TrustBoundary'
+      required:
+        - submissionId
+        - category
+        - blastRadius
+        - affectedServices
+        - matchedHistory
+        - matchedHistoryCount
+        - trustBoundary

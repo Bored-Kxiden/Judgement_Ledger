@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Write Ledger Outcome
+  version: "1.0.0"
+  description: >
+    Connector for "write_judgment_ledger_outcome". Receives the generated
+    verdict PDF plus outcome fields and upserts the matching Judgment Ledger
+    entry. observationStatus should stay "pending" while a slow-feedback
+    window remains open, so an incomplete result is never mistaken for a
+    clean one.
+servers:
+  - url: https://judgment-ledger-server.onrender.com   # provisional — confirm against the real Render URL once deployed
+security:
+  - apiKeyAuth: []
+paths:
+  /api/ledger/{submissionId}/outcome:
+    post:
+      operationId: writeLedgerOutcome
+      summary: Write a deploy's observed outcome to its Judgment Ledger entry
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: SUB-88214
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LedgerOutcomeUpload'
+      responses:
+        '201':
+          description: Ledger entry written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerOutcomeResponse'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    LedgerOutcomeUpload:
+      type: object
+      properties:
+        category:
+          type: string
+        blastRadius:
+          type: integer
+        decision:
+          type: string
+        confidence:
+          type: number
+        evidenceSampleSize:
+          type: integer
+        humanCorrected:
+          type: boolean
+        observationStatus:
+          type: string
+          enum: [pending, incomplete, complete]
+        outcome:
+          type: string
+        verdict:
+          type: string
+        pdf:
+          type: string
+          format: binary
+      required:
+        - category
+        - observationStatus
+        - pdf
+    LedgerEntry:
+      type: object
+      properties:
+        submission_id:
+          type: string
+        category:
+          type: string
+        observation_status:
+          type: string
+          enum: [pending, incomplete, complete]
+        outcome:
+          type: string
+        verdict:
+          type: string
+        outcome_pdf_url:
+          type: string
+      required:
+        - submission_id
+        - category
+        - observation_status
+    LedgerOutcomeResponse:
+      type: object
+      properties:
+        ledgerEntry:
+          $ref: '#/components/schemas/LedgerEntry'
+      required:
+        - ledgerEntry

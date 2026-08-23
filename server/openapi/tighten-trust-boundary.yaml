@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Tighten Trust Boundary
+  version: "1.0.0"
+  description: >
+    Connector for "tighten_trust_boundary". Strictly one-directional: can
+    only move a category from auto-approve trusted to escalation required
+    after a confirmed problem. It cannot loosen, restore, or expand a
+    category — that only ever happens through human policy review.
+servers:
+  - url: https://judgment-ledger-server.onrender.com
+security:
+  - apiKeyAuth: []
+paths:
+  /api/categories/{category}/tighten:
+    post:
+      operationId: tightenTrustBoundary
+      summary: Revert a category to human-required after a confirmed problem
+      parameters:
+        - name: category
+          in: path
+          required: true
+          description: The risk category to tighten (e.g. "config change").
+          schema:
+            type: string
+          example: config change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - reason
+                - submissionId
+              properties:
+                reason:
+                  type: string
+                submissionId:
+                  type: string
+      responses:
+        '200':
+          description: Tighten result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TightenResponse'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    TrustBoundary:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          type: string
+        status:
+          type: string
+          enum: [auto-approve trusted, escalation required]
+      required:
+        - category
+        - status
+    TightenResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          $ref: '#/components/schemas/TrustBoundary'
+        changed:
+          type: boolean
+        message:
+          type: string
+      required:
+        - category
+        - changed

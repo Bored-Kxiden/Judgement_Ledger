@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Policy Review Queue
+  version: "1.0.0"
+  description: >
+    Connector for the "Weekly policy review" tool. Read-only — returns every
+    category currently in escalation-required status with its sample size,
+    correction history, and standing recommendation.
+servers:
+  - url: https://judgment-ledger-server.onrender.com
+security:
+  - apiKeyAuth: []
+paths:
+  /api/categories/review-queue:
+    get:
+      operationId: getPolicyReviewQueue
+      summary: List categories currently requiring human policy review
+      responses:
+        '200':
+          description: Escalation-required categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewQueueResponse'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    TrustBoundary:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          type: string
+        status:
+          type: string
+          enum: [auto-approve trusted, escalation required]
+        min_sample_required:
+          type: integer
+        current_sample_size:
+          type: integer
+        confidence_floor:
+          type: number
+        corrections:
+          type: integer
+        correction_severity:
+          type: string
+          enum: [none, minor, severe]
+        recommendation:
+          type: string
+          enum: [expand trust, restore trust, hold as-is]
+        reasoning:
+          type: string
+      required:
+        - category
+        - status
+        - min_sample_required
+        - current_sample_size
+        - confidence_floor
+        - corrections
+        - correction_severity
+        - recommendation
+    ReviewQueueResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustBoundary'
+      required:
+        - categories
