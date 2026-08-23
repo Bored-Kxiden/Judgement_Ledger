@@ -107,15 +107,39 @@ hitlRouter.post('/webhook', raw({ type: '*/*' }), async (req, res) => {
   res.status(200).json({ received: true, handled: false })
 })
 
+/**
+ * The approval queue. Each Yoxa request is joined to its originating
+ * submission by workflow_run_id — the stable cross-system link — so the UI
+ * can show what the approval is actually about, not just Yoxa's title.
+ */
 hitlRouter.get('/requests', async (req, res) => {
   const status = (req.query.status as string | undefined) ?? 'pending'
-  const { data, error } = await supabase
+  const { data: requests, error } = await supabase
     .from('hitl_requests')
     .select('request_id, workflow_run_id, title, description, options, status, selected_option_id, override_message, answered_by, answered_at, created_at')
     .eq('status', status)
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
-  res.json({ requests: data })
+
+  const runIds = (requests ?? []).map((r) => r.workflow_run_id).filter((id): id is string => Boolean(id))
+  let submissionsByRunId: Record<string, unknown> = {}
+  if (runIds.length > 0) {
+    const { data: submissions, error: subErr } = await supabase
+      .from('submissions')
+      .select('id, author, service, branch, commit_ref, category, status, workflow_run_id')
+      .in('workflow_run_id', runIds)
+    if (subErr) return res.status(500).json({ error: subErr.message })
+    submissionsByRunId = Object.fromEntries(
+      (submissions ?? []).map((s) => [s.workflow_run_id as string, s]),
+    )
+  }
+
+  res.json({
+    requests: (requests ?? []).map((r) => ({
+      ...r,
+      submission: r.workflow_run_id ? submissionsByRunId[r.workflow_run_id] ?? null : null,
+    })),
+  })
 })
 
 /**
