@@ -24,10 +24,18 @@ async function triggerYoxaWorkflow(
     return { ok: false, error: 'Yoxa trigger is not configured (YOXA_TRIGGER_URL / YOXA_DEPLOYMENT_SECRET unset)' }
   }
 
-  const diffPayload = JSON.stringify({ submissionId, service, author, files: files ?? [] }, null, 2)
+  const fileList = Array.isArray(files) ? files : []
+  const diffText = [
+    `Submission: ${submissionId}`,
+    `Service: ${service}`,
+    `Author: ${author}`,
+    `Files changed: ${fileList.length}`,
+    '',
+    JSON.stringify(fileList, null, 2),
+  ].join('\n')
   const form = new FormData()
   form.append('trigger_text', `New deploy submission ${submissionId} for ${service}, submitted by ${author}`)
-  form.append('file', new Blob([diffPayload], { type: 'application/json' }), `${submissionId}.json`)
+  form.append('file', new Blob([diffText], { type: 'text/plain' }), `${submissionId}.txt`)
 
   try {
     const response = await fetch(env.yoxaTriggerUrl, {
