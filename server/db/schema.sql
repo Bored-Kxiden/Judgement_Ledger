@@ -84,6 +84,35 @@ create table if not exists deployment_observations (
   updated_at          timestamptz not null default now()
 );
 
+-- Every webhook delivery Yoxa makes, recorded once. The primary key is the
+-- dedupe mechanism: Yoxa delivers at-least-once, and a repeated event_id must
+-- never create a second approval task.
+create table if not exists hitl_webhook_events (
+  event_id    text primary key,
+  event_type  text not null,
+  payload     jsonb,
+  received_at timestamptz not null default now()
+);
+
+create table if not exists hitl_requests (
+  request_id         text primary key,
+  event_id           text not null references hitl_webhook_events(event_id),
+  deployment_id      text not null,
+  workflow_run_id    text,
+  title              text,
+  description        text,
+  options            jsonb not null default '[]'::jsonb,
+  status             text not null default 'pending' check (status in ('pending', 'answered')),
+  selected_option_id text,
+  override_message   text,
+  answered_by        text,
+  answered_at        timestamptz,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+create index if not exists hitl_requests_workflow_run_id_idx on hitl_requests (workflow_run_id);
+
 -- Storage buckets for the two generated-output (PDF) tools. Private — the
 -- server signs URLs on demand rather than serving these publicly.
 insert into storage.buckets (id, name, public)

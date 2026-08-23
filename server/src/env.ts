@@ -17,4 +17,8 @@ export const env = {
   // aren't set yet, since not every deploy of this server needs Yoxa wired up.
   yoxaTriggerUrl: process.env.YOXA_TRIGGER_URL || null,
   yoxaDeploymentSecret: process.env.YOXA_DEPLOYMENT_SECRET || null,
+  // Deployed HITL. Also optional: the receiver returns 503 rather than
+  // failing at boot, so the server still starts before these are generated.
+  yoxaHitlWebhookSigningSecret: process.env.YOXA_HITL_WEBHOOK_SIGNING_SECRET || null,
+  yoxaHitlResponseSecret: process.env.YOXA_HITL_RESPONSE_SECRET || null,
 }

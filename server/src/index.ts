@@ -9,9 +9,15 @@ import { categoriesRouter } from './routes/categories.js'
 import { policyProposalsRouter } from './routes/policyProposals.js'
 import { ledgerRouter } from './routes/ledger.js'
 import { feedbackRouter } from './routes/feedback.js'
+import { hitlRouter } from './routes/hitl.js'
 
 const app = express()
 app.use(cors())
+
+// The HITL webhook's HMAC covers the exact bytes Yoxa sent, so its raw body
+// must be captured BEFORE the global JSON parser can consume and re-shape it.
+// body-parser marks the request as read, so express.json() below skips it.
+app.use('/api/hitl/webhook', express.raw({ type: '*/*' }))
 app.use(express.json())
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
@@ -21,6 +27,10 @@ app.get('/health', (_req, res) => res.json({ ok: true }))
 // never require the Yoxa connector key, since that would ship a real secret
 // to the browser. Every other router is a Yoxa-to-server tool call and stays
 // behind apiKeyAuth.
+// hitlRouter is also outside apiKeyAuth: its webhook authenticates by HMAC
+// signature (not the connector key), and its respond route is called by the
+// approval UI in the browser.
+app.use('/api/hitl', hitlRouter)
 app.use('/api/submissions', submissionsRouter)
 app.use('/api/deploys', apiKeyAuth, intakeRouter)
 app.use('/api/deploys', apiKeyAuth, deployRouter)

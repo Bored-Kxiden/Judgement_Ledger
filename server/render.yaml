@@ -25,3 +25,7 @@ services:
         sync: false
       - key: YOXA_DEPLOYMENT_SECRET
         sync: false
+      - key: YOXA_HITL_WEBHOOK_SIGNING_SECRET
+        sync: false
+      - key: YOXA_HITL_RESPONSE_SECRET
+        sync: false
