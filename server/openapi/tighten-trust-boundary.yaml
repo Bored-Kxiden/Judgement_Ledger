@@ -8,7 +8,7 @@ info:
     after a confirmed problem. It cannot loosen, restore, or expand a
     category — that only ever happens through human policy review.
 servers:
-  - url: https://judgment-ledger-server.onrender.com
+  - url: https://judgement-ledger.onrender.com
 security:
   - apiKeyAuth: []
 paths:

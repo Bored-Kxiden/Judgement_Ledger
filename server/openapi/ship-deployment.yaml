@@ -9,7 +9,7 @@ info:
     see server/src/routes/deploy.ts — so a 200 here does not yet mean a real
     deploy fired.
 servers:
-  - url: https://judgment-ledger-server.onrender.com
+  - url: https://judgement-ledger.onrender.com
 security:
   - apiKeyAuth: []
 paths:

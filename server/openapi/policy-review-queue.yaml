@@ -7,7 +7,7 @@ info:
     category currently in escalation-required status with its sample size,
     correction history, and standing recommendation.
 servers:
-  - url: https://judgment-ledger-server.onrender.com
+  - url: https://judgement-ledger.onrender.com
 security:
   - apiKeyAuth: []
 paths:
