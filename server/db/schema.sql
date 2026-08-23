@@ -38,9 +38,13 @@ create table if not exists submissions (
   status                text not null default 'submitted'
                         check (status in ('submitted', 'auto-approved', 'escalated', 'approved', 'blocked', 'more_signal', 'shipped')),
   decision_reason       text,
+  workflow_run_id       text,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
+
+-- Safe to re-run: adds the column if this table already existed before it was introduced.
+alter table submissions add column if not exists workflow_run_id text;
 
 create table if not exists judgment_ledger (
   submission_id       text primary key references submissions(id),
