@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { randomUUID } from 'node:crypto'
+import PDFDocument from 'pdfkit'
 import { supabase } from '../supabaseClient.js'
 import { env } from '../env.js'
 
@@ -8,6 +9,31 @@ export const submissionsRouter = Router()
 type TriggerResult =
   | { ok: true; workflowRunId: string | null }
   | { ok: false; error: string }
+
+/**
+ * Yoxa's file-mode trigger only accepts PDF or DOC — confirmed by Yoxa
+ * support after a plain-text attachment caused a server-side 500. Renders
+ * the submission context as a one-page PDF.
+ */
+function buildSubmissionPdf(submissionId: string, service: string, author: string, fileList: unknown[]): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument()
+    const chunks: Buffer[] = []
+    doc.on('data', (chunk) => chunks.push(chunk))
+    doc.on('end', () => resolve(Buffer.concat(chunks)))
+    doc.on('error', reject)
+
+    doc.fontSize(16).text('Judgment Ledger — Deploy Submission', { underline: true })
+    doc.moveDown()
+    doc.fontSize(12).text(`Submission ID: ${submissionId}`)
+    doc.text(`Service: ${service}`)
+    doc.text(`Author: ${author}`)
+    doc.text(`Files changed: ${fileList.length}`)
+    doc.moveDown()
+    doc.fontSize(10).text(JSON.stringify(fileList, null, 2))
+    doc.end()
+  })
+}
 
 /**
  * Fires the workflow's entry trigger (file-mode) on Yoxa. Never throws —
@@ -25,17 +51,10 @@ async function triggerYoxaWorkflow(
   }
 
   const fileList = Array.isArray(files) ? files : []
-  const diffText = [
-    `Submission: ${submissionId}`,
-    `Service: ${service}`,
-    `Author: ${author}`,
-    `Files changed: ${fileList.length}`,
-    '',
-    JSON.stringify(fileList, null, 2),
-  ].join('\n')
+  const pdfBuffer = await buildSubmissionPdf(submissionId, service, author, fileList)
   const form = new FormData()
   form.append('trigger_text', `New deploy submission ${submissionId} for ${service}, submitted by ${author}`)
-  form.append('file', new Blob([diffText], { type: 'text/plain' }), `${submissionId}.txt`)
+  form.append('file', new Blob([new Uint8Array(pdfBuffer)], { type: 'application/pdf' }), `${submissionId}.pdf`)
 
   try {
     const response = await fetch(env.yoxaTriggerUrl, {
