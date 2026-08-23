@@ -24,7 +24,7 @@ paths:
           description: The submission ID being shipped.
           schema:
             type: string
-          example: SUB-91501
+          example: SUB-91022
       requestBody:
         required: true
         content:

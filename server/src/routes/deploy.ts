@@ -26,6 +26,7 @@ deployRouter.post('/:submissionId/ship', async (req, res) => {
     .select('id, author, service, category, status, confidence, decision_reason')
     .single()
 
+  if (error?.code === 'PGRST116') return res.status(404).json({ error: 'submission not found' })
   if (error) return res.status(500).json({ error: error.message })
 
   // --- STUB: replace with a real CI/CD pipeline trigger + notification call ---
