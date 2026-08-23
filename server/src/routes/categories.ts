@@ -4,10 +4,13 @@ import { supabase } from '../supabaseClient.js'
 export const categoriesRouter = Router()
 
 /** Adapter for "Weekly policy review" (tool_13_call). Read-only. */
+const TRUST_BOUNDARY_COLUMNS =
+  'category, status, min_sample_required, current_sample_size, confidence_floor, corrections, correction_severity, recommendation, reasoning'
+
 categoriesRouter.get('/review-queue', async (_req, res) => {
   const { data, error } = await supabase
     .from('trust_boundaries')
-    .select('*')
+    .select(TRUST_BOUNDARY_COLUMNS)
     .eq('status', 'escalation required')
     .order('category')
   if (error) return res.status(500).json({ error: error.message })
@@ -31,7 +34,7 @@ categoriesRouter.post('/:category/tighten', async (req, res) => {
 
   const { data: current, error: readErr } = await supabase
     .from('trust_boundaries')
-    .select('*')
+    .select('category, status')
     .eq('category', category)
     .single()
   if (readErr || !current) return res.status(404).json({ error: `unknown category "${category}"` })
@@ -48,7 +51,7 @@ categoriesRouter.post('/:category/tighten', async (req, res) => {
     .from('trust_boundaries')
     .update({ status: 'escalation required', updated_at: new Date().toISOString() })
     .eq('category', category)
-    .select()
+    .select('category, status')
     .single()
   if (error) return res.status(500).json({ error: error.message })
 

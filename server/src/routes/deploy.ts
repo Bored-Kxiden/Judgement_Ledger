@@ -23,7 +23,7 @@ deployRouter.post('/:submissionId/ship', async (req, res) => {
       updated_at: new Date().toISOString(),
     })
     .eq('id', submissionId)
-    .select()
+    .select('id, author, service, category, status, confidence, decision_reason')
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
