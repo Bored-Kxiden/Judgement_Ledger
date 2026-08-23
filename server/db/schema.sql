@@ -70,6 +70,16 @@ create table if not exists policy_proposals (
   created_at      timestamptz not null default now()
 );
 
+create table if not exists deployment_observations (
+  submission_id       text primary key references submissions(id),
+  fast_window_status  text not null default 'pending' check (fast_window_status in ('pending', 'incomplete', 'complete')),
+  fast_window_summary text,
+  slow_window_status  text not null default 'pending' check (slow_window_status in ('pending', 'incomplete', 'complete')),
+  slow_window_summary text,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
 -- Storage buckets for the two generated-output (PDF) tools. Private — the
 -- server signs URLs on demand rather than serving these publicly.
 insert into storage.buckets (id, name, public)

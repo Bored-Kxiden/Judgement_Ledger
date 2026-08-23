@@ -1,0 +1,68 @@
+openapi: 3.1.0
+info:
+  title: Judgment Ledger — Collect Deployment Feedback
+  version: "1.0.0"
+  description: >
+    Connector for "collect_deployment_feedback". Reads fast- and
+    slow-feedback window observations for a shipped deployment from the
+    Judgment Ledger's own observation store. There is no third-party
+    monitoring provider behind this yet — status is "pending" until an
+    observation is recorded, and "incomplete" if a feed dropped, never
+    silently treated as a clean outcome.
+servers:
+  - url: https://judgement-ledger.onrender.com
+security:
+  - apiKeyAuth: []
+paths:
+  /api/feedback/{submissionId}:
+    get:
+      operationId: collectDeploymentFeedback
+      summary: Get fast/slow feedback-window observations for a shipped deployment
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          description: The submission ID whose deployment outcome is being observed.
+          schema:
+            type: string
+          example: SUB-65510
+      responses:
+        '200':
+          description: Feedback observations for the deployment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackObservations'
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ObservationWindow:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [pending, incomplete, complete]
+        summary:
+          type: string
+      required:
+        - status
+        - summary
+    FeedbackObservations:
+      type: object
+      additionalProperties: false
+      properties:
+        submissionId:
+          type: string
+        fastWindow:
+          $ref: '#/components/schemas/ObservationWindow'
+        slowWindow:
+          $ref: '#/components/schemas/ObservationWindow'
+      required:
+        - submissionId
+        - fastWindow
+        - slowWindow

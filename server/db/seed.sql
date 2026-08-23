@@ -82,3 +82,8 @@ insert into judgment_ledger (submission_id, category, blast_radius, decision, co
   ('SUB-76650', 'data schema migration', 12, 'escalated → approved', 0.35, 3, false, 'complete', 'required a follow-up patch, minor', 'confirmed problem (minor)'),
   ('SUB-76890', 'data schema migration', 11, 'escalated → approved', 0.37, 3, false, 'complete', 'no incident', 'confirmed safe')
 on conflict (submission_id) do nothing;
+
+insert into deployment_observations (submission_id, fast_window_status, fast_window_summary, slow_window_status, slow_window_summary) values
+  ('SUB-65510', 'complete', 'Error rate spiked to 4.1% in the first 30 minutes; 12 customers were double-charged before the retry logic was rolled back.', 'complete', 'Rollback held; no further duplicate charges in the 24 hours after revert.'),
+  ('SUB-80217', 'complete', 'No errors or crashes detected in the first 2 hours post-deploy.', 'pending', 'Payments-category slow-feedback window remains open for 72 hours from deploy.')
+on conflict (submission_id) do nothing;
