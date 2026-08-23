@@ -12,6 +12,7 @@ import { riskySubmission, trivialSubmission, trustBoundaries } from '../data/moc
 import type { Submission } from '../data/mockData'
 import { submitDeploy } from '../lib/api'
 import type { SubmitDeployResponse } from '../lib/api'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type Stage = 'idle' | 'running' | 'done' | 'error'
 
@@ -20,6 +21,7 @@ function generateSubmissionId() {
 }
 
 export default function SubmitPage() {
+  useDocumentTitle('Submit')
   const [sample, setSample] = useState<Submission>(riskySubmission)
   const [stage, setStage] = useState<Stage>('idle')
   const [result, setResult] = useState<SubmitDeployResponse | null>(null)
@@ -60,18 +62,18 @@ export default function SubmitPage() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Submit a change for deploy</h1>
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-lg font-semibold sm:text-xl">Submit a change for deploy</h1>
+          <div className="flex gap-2 overflow-x-auto">
             <button
               onClick={() => pickSample(riskySubmission)}
-              className={`rounded-md border px-2.5 py-1 text-xs font-medium ${sample.id === riskySubmission.id ? 'border-amber/50 bg-amber-subtle text-amber-emphasis' : 'border-border text-fg-muted hover:text-fg'}`}
+              className={`shrink-0 rounded-md border px-2.5 py-1 text-xs font-medium ${sample.id === riskySubmission.id ? 'border-amber/50 bg-amber-subtle text-amber-emphasis' : 'border-border text-fg-muted hover:text-fg'}`}
             >
               Load payments-logic diff
             </button>
             <button
               onClick={() => pickSample(trivialSubmission)}
-              className={`rounded-md border px-2.5 py-1 text-xs font-medium ${sample.id === trivialSubmission.id ? 'border-teal/50 bg-teal-subtle text-teal-emphasis' : 'border-border text-fg-muted hover:text-fg'}`}
+              className={`shrink-0 rounded-md border px-2.5 py-1 text-xs font-medium ${sample.id === trivialSubmission.id ? 'border-teal/50 bg-teal-subtle text-teal-emphasis' : 'border-border text-fg-muted hover:text-fg'}`}
             >
               Load text/copy diff
             </button>
@@ -189,9 +191,9 @@ export default function SubmitPage() {
         </GlassCard>
 
         <GlassCard className="p-4">
-          <div className="mb-2 text-xs text-fg-muted">Predicted category</div>
+          <div className="mb-2 text-xs text-fg-muted">{sample.category} — current trust status</div>
           <StatusBadge tone={boundary.status === 'auto-approve trusted' ? 'teal' : 'amber'}>
-            {sample.category}
+            {boundary.status}
           </StatusBadge>
           <p className="mt-2 text-xs leading-relaxed text-fg-subtle">{boundary.reasoning}</p>
         </GlassCard>

@@ -8,8 +8,10 @@ import { GlassCard } from '../components/GlassCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchApprovals, respondToApproval } from '../lib/api'
 import type { ApprovalRequest } from '../lib/api'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 export default function EscalationPage() {
+  useDocumentTitle('Escalations')
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -33,8 +35,8 @@ export default function EscalationPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <AlertTriangle size={18} className="text-amber-emphasis" />
-        <h1 className="text-xl font-semibold">Escalated for human review</h1>
+        <AlertTriangle size={18} className="shrink-0 text-amber-emphasis" />
+        <h1 className="text-lg font-semibold sm:text-xl">Escalated for human review</h1>
         {!loading && (
           <span className="rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">
             {approvals.length} pending

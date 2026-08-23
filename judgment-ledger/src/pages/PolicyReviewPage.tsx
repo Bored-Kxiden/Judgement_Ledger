@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Activity, Check, Database, Info, Layers, ShieldCheck, Users, X } from 'lucide-react'
+import { Activity, ChevronDown, Check, Database, Info, Layers, ShieldCheck, Users, X } from 'lucide-react'
 import { StatusBadge, verdictTone } from '../components/StatusBadge'
 import { GlassCard } from '../components/GlassCard'
 import { ledgerHistory, trustBoundaries } from '../data/mockData'
 import type { Category, CategoryTrust, LedgerEntry } from '../data/mockData'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 type Verdict = null | 'approved' | 'rejected'
 
@@ -25,6 +26,7 @@ const toneDot: Record<'teal' | 'amber' | 'red' | 'neutral' | 'blue', string> = {
 }
 
 export default function PolicyReviewPage() {
+  useDocumentTitle('Policy Review')
   const pending = trustBoundaries.filter((c) => c.status === 'escalation required')
   const trusted = trustBoundaries.filter((c) => c.status === 'auto-approve trusted')
   const [verdicts, setVerdicts] = useState<Record<string, Verdict>>({})
@@ -33,47 +35,19 @@ export default function PolicyReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Users size={18} className="text-amber-emphasis" />
-        <h1 className="text-xl font-semibold">Weekly policy review</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <Users size={18} className="shrink-0 text-amber-emphasis" />
+        <h1 className="text-lg font-semibold sm:text-xl">Weekly policy review</h1>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted">
           Engineering Leadership
         </span>
       </div>
 
-      {/* ---------- Stat tiles ---------- */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile icon={Layers} label="Categories tracked" value={trustBoundaries.length} />
-        <StatTile icon={ShieldCheck} label="Auto-approve trusted" value={trusted.length} tone="teal" />
-        <StatTile icon={Users} label="Escalation required" value={pending.length} tone="amber" />
-        <StatTile icon={Database} label="Ledger entries" value={ledgerHistory.length} sub={`${totalCorrections} corrections`} />
-      </div>
-
-      {/* ---------- Evidence activity + feed ---------- */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <GlassCard className="p-4">
-          <div className="mb-1 flex items-center gap-2">
-            <Activity size={15} className="text-fg-muted" />
-            <h2 className="text-sm font-semibold text-fg">Evidence activity by category</h2>
-          </div>
-          <p className="mb-4 text-xs text-fg-subtle">
-            Every Judgment Ledger entry, in order, per category. Hover a square for the submission.
-          </p>
-          <EvidenceHeatmap />
-        </GlassCard>
-
-        <GlassCard className="flex flex-col p-4">
-          <h2 className="mb-3 text-sm font-semibold text-fg">Recent ledger activity</h2>
-          <ActivityFeed />
-        </GlassCard>
-      </div>
-
+      {/* ---------- The actual task: categories waiting on a decision ---------- */}
       <div className="flex items-start gap-2 rounded-md border border-border bg-surface/60 px-4 py-3 text-xs leading-relaxed text-fg-muted">
         <Info size={15} className="mt-0.5 shrink-0 text-blue" />
         This is the only place a category's trust boundary can move upward. Approvals here are the sole
         mechanism to expand or restore trust — nothing in the automated system applies a change on its own.
-        The Reconciliation Agent may still tighten a category automatically at any time if a bad outcome lands
-        in an auto-approved category.
       </div>
 
       <div className="space-y-3">
@@ -87,25 +61,63 @@ export default function PolicyReviewPage() {
         ))}
       </div>
 
-      <div>
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-fg-muted">
-          <ShieldCheck size={15} className="text-teal-emphasis" />
-          Already trusted — no action needed
-        </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {trusted.map((c) => (
-            <GlassCard key={c.category} className="p-4">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="font-medium text-fg">{c.category}</span>
-                <StatusBadge tone="teal">auto-approve trusted</StatusBadge>
+      {/* ---------- Everything below is reference, not action — tucked away by default ---------- */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-surface/60 px-4 py-3 text-sm font-medium text-fg-muted hover:text-fg [&::-webkit-details-marker]:hidden">
+          <ChevronDown size={15} className="shrink-0 transition-transform group-open:rotate-180" />
+          Evidence &amp; trends
+          <span className="ml-auto text-xs font-normal text-fg-subtle">
+            {trustBoundaries.length} categories · {ledgerHistory.length} ledger entries
+          </span>
+        </summary>
+
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatTile icon={Layers} label="Categories tracked" value={trustBoundaries.length} />
+            <StatTile icon={ShieldCheck} label="Auto-approve trusted" value={trusted.length} tone="teal" />
+            <StatTile icon={Users} label="Escalation required" value={pending.length} tone="amber" />
+            <StatTile icon={Database} label="Ledger entries" value={ledgerHistory.length} sub={`${totalCorrections} corrections`} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+            <GlassCard className="p-4">
+              <div className="mb-1 flex items-center gap-2">
+                <Activity size={15} className="text-fg-muted" />
+                <h2 className="text-sm font-semibold text-fg">Evidence activity by category</h2>
               </div>
-              <div className="font-mono text-xs text-fg-subtle">
-                {c.currentSampleSize} samples · {c.corrections} corrections
-              </div>
+              <p className="mb-4 text-xs text-fg-subtle">
+                Every Judgment Ledger entry, in order, per category. Hover a square for the submission.
+              </p>
+              <EvidenceHeatmap />
             </GlassCard>
-          ))}
+
+            <GlassCard className="flex flex-col p-4">
+              <h2 className="mb-3 text-sm font-semibold text-fg">Recent ledger activity</h2>
+              <ActivityFeed />
+            </GlassCard>
+          </div>
+
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-fg-muted">
+              <ShieldCheck size={15} className="text-teal-emphasis" />
+              Already trusted — no action needed
+            </h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {trusted.map((c) => (
+                <GlassCard key={c.category} className="p-4">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="font-medium text-fg">{c.category}</span>
+                    <StatusBadge tone="teal">auto-approve trusted</StatusBadge>
+                  </div>
+                  <div className="font-mono text-xs text-fg-subtle">
+                    {c.currentSampleSize} samples · {c.corrections} corrections
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   )
 }
@@ -142,11 +154,11 @@ function EvidenceHeatmap() {
       {ALL_CATEGORIES.map((cat) => {
         const entries = ledgerHistory.filter((e) => e.category === cat)
         return (
-          <div key={cat} className="flex items-center gap-3">
-            <span className="w-36 shrink-0 truncate text-xs text-fg-muted" title={cat}>
+          <div key={cat} className="flex items-center gap-2 sm:gap-3">
+            <span className="w-20 shrink-0 truncate text-xs text-fg-muted sm:w-36" title={cat}>
               {cat}
             </span>
-            <div className="flex flex-1 gap-1">
+            <div className="flex flex-1 flex-wrap gap-1">
               {entries.length === 0
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <span key={i} className="h-4 w-4 shrink-0 rounded-sm border border-dashed border-border" />
@@ -160,14 +172,14 @@ function EvidenceHeatmap() {
                   ))}
               {entries.length === 0 && <span className="self-center text-[11px] text-fg-subtle">no data yet</span>}
             </div>
-            <span className="w-16 shrink-0 text-right font-mono text-[11px] text-fg-subtle">
+            <span className="hidden shrink-0 text-right font-mono text-[11px] text-fg-subtle sm:inline sm:w-16">
               {entries.length}/{maxEntries}
             </span>
           </div>
         )
       })}
 
-      <div className="flex flex-wrap items-center gap-4 border-t border-border pt-3 text-[11px] text-fg-subtle">
+      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-[11px] text-fg-subtle sm:gap-4">
         <Legend tone="teal" label="Confirmed safe" />
         <Legend tone="amber" label="Still inconclusive" />
         <Legend tone="red" label="Confirmed problem" />
@@ -273,14 +285,14 @@ function CategoryRow({
             <>
               <button
                 onClick={() => onVerdict('approved')}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-fg hover:bg-surface-hover"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-surface-raised px-3 py-2 text-xs font-medium text-fg hover:bg-surface-hover"
               >
                 <Check size={13} />
                 Approve
               </button>
               <button
                 onClick={() => onVerdict('rejected')}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-surface-raised px-3 py-1.5 text-xs font-medium text-fg hover:bg-surface-hover"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-surface-raised px-3 py-2 text-xs font-medium text-fg hover:bg-surface-hover"
               >
                 <X size={13} />
                 Reject
