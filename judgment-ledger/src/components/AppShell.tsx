@@ -10,8 +10,14 @@ const tabs = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-canvas text-fg">
-      <header className="border-b border-border-muted bg-canvas-inset">
+    <div className="relative min-h-screen bg-canvas text-fg">
+      <div className="bg-orbs">
+        <div className="bg-orb bg-orb--amber" />
+        <div className="bg-orb bg-orb--teal" />
+        <div className="bg-orb bg-orb--red" />
+      </div>
+
+      <header className="glass sticky top-0 z-10 border-x-0 border-t-0">
         <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-4 py-3">
           <Scale size={22} className="text-amber-emphasis" strokeWidth={2} />
           <div className="flex items-center gap-1.5 font-mono text-[15px]">
@@ -24,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
 
           <div className="ml-auto flex items-center gap-4">
-            <div className="hidden items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-fg-subtle sm:flex">
+            <div className="hidden items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-1.5 text-sm text-fg-subtle sm:flex">
               <Search size={14} />
               <span>Search submissions…</span>
               <kbd className="ml-6 rounded border border-border-muted bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] text-fg-subtle">
@@ -60,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-[1280px] px-4 py-6">{children}</main>
+      <main className="relative z-[1] mx-auto max-w-[1280px] px-4 py-6">{children}</main>
     </div>
   )
 }

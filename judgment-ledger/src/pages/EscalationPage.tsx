@@ -4,6 +4,7 @@ import {
   Inbox, Loader2, RefreshCw,
 } from 'lucide-react'
 import { Avatar } from '../components/Avatar'
+import { GlassCard } from '../components/GlassCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { fetchApprovals, respondToApproval } from '../lib/api'
 import type { ApprovalRequest } from '../lib/api'
@@ -50,27 +51,27 @@ export default function EscalationPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 rounded-md border border-border bg-surface p-6 text-sm text-fg-muted">
+        <GlassCard className="flex items-center gap-2 p-6 text-sm text-fg-muted">
           <Loader2 size={16} className="animate-spin text-amber-emphasis" />
           Loading pending approvals…
-        </div>
+        </GlassCard>
       ) : loadError ? (
-        <div className="flex gap-3 rounded-md border border-red/40 bg-red-subtle p-4">
+        <GlassCard className="flex gap-3 border-red/30 p-4">
           <AlertTriangle size={18} className="shrink-0 text-red-emphasis" />
           <div>
             <div className="text-sm font-semibold text-fg">Couldn't load approvals</div>
             <div className="mt-0.5 text-xs text-fg-muted">{loadError}</div>
           </div>
-        </div>
+        </GlassCard>
       ) : approvals.length === 0 ? (
-        <div className="rounded-md border border-border bg-surface p-8 text-center">
+        <GlassCard className="p-8 text-center">
           <Inbox size={28} className="mx-auto text-fg-subtle" />
           <div className="mt-3 text-sm font-medium text-fg">Nothing waiting on you</div>
           <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-fg-muted">
             When the Threshold Agent escalates a deploy, it appears here with its reasoning and the
             options it wants a decision on. Nothing auto-approves on a timeout.
           </p>
-        </div>
+        </GlassCard>
       ) : (
         approvals.map((approval) => (
           <ApprovalCard key={approval.request_id} approval={approval} onDecided={load} />
@@ -102,7 +103,7 @@ function ApprovalCard({ approval, onDecided }: { approval: ApprovalRequest; onDe
   const sub = approval.submission
 
   return (
-    <div className="rounded-md border border-border bg-surface">
+    <GlassCard hover>
       <div className="border-b border-border px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold text-fg">{approval.title ?? 'Approval requested'}</span>
@@ -198,7 +199,7 @@ function ApprovalCard({ approval, onDecided }: { approval: ApprovalRequest; onDe
           <div className="font-mono text-[11px] text-fg-subtle">run {approval.workflow_run_id}</div>
         )}
       </div>
-    </div>
+    </GlassCard>
   )
 }
 

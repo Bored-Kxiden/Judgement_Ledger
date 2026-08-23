@@ -1,8 +1,13 @@
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, GitBranch, GitCommitHorizontal, ListChecks, Loader2, PackageCheck } from 'lucide-react'
+import {
+  AlertTriangle, CheckCircle2, Clock, GitBranch, GitCommitHorizontal,
+  ListChecks, ScanSearch, Send, ShieldQuestion, Zap,
+} from 'lucide-react'
 import { Avatar } from '../components/Avatar'
 import { DiffView } from '../components/DiffView'
+import { GlassCard } from '../components/GlassCard'
 import { StatusBadge } from '../components/StatusBadge'
+import { Timeline, TimelineStep } from '../components/Timeline'
 import { riskySubmission, trivialSubmission, trustBoundaries } from '../data/mockData'
 import type { Submission } from '../data/mockData'
 import { submitDeploy } from '../lib/api'
@@ -13,12 +18,6 @@ type Stage = 'idle' | 'running' | 'done' | 'error'
 function generateSubmissionId() {
   return `SUB-${Date.now().toString().slice(-8)}`
 }
-
-const STEPS = [
-  { title: 'Classify the change', body: 'Intake Agent reads the diff, assigns a risk category, and computes blast radius against the service dependency graph.' },
-  { title: 'Check trust boundary', body: 'Threshold Agent weighs the Judgment Ledger evidence for that category against the current human-approved trust boundary.' },
-  { title: 'Ship or escalate', body: 'Auto-approved changes deploy immediately. Anything else routes to a Senior Approver with full reasoning attached.' },
-]
 
 export default function SubmitPage() {
   const [sample, setSample] = useState<Submission>(riskySubmission)
@@ -79,7 +78,7 @@ export default function SubmitPage() {
           </div>
         </div>
 
-        <div className="rounded-md border border-border bg-surface">
+        <GlassCard>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-border px-4 py-3 text-sm">
             <div className="flex items-center gap-2">
               <Avatar initials={sample.authorInitials} size={22} />
@@ -123,71 +122,84 @@ export default function SubmitPage() {
               <DiffView key={f.filename} file={f} />
             ))}
           </div>
-        </div>
+        </GlassCard>
 
-        {stage !== 'idle' && (
-          <div className="rounded-md border border-border bg-surface p-4">
-            {stage === 'running' ? (
-              <div className="flex items-center gap-2 text-sm text-fg-muted">
-                <Loader2 size={16} className="animate-spin text-amber-emphasis" />
-                Submitting to the Judgment Ledger and triggering the Yoxa workflow…
+        {stage === 'error' && (
+          <GlassCard className="border-red/30 p-4">
+            <div className="flex gap-3">
+              <AlertTriangle size={18} className="shrink-0 text-red-emphasis" />
+              <div>
+                <div className="text-sm font-semibold text-fg">Submission failed</div>
+                <div className="mt-0.5 text-xs leading-relaxed text-fg-muted">{submitError}</div>
               </div>
-            ) : stage === 'error' ? (
-              <DecisionReceipt
-                tone="red"
-                icon={<AlertTriangle size={18} className="text-red-emphasis" />}
-                title="Submission failed"
-                reason={submitError ?? 'Unknown error'}
-              />
-            ) : result?.workflowTriggered ? (
-              <DecisionReceipt
-                tone="teal"
-                icon={<PackageCheck size={18} className="text-teal-emphasis" />}
-                title="Submitted — workflow triggered"
-                reason={`Recorded as ${result.submission.id}${result.submission.workflow_run_id ? ` (Yoxa run ${result.submission.workflow_run_id})` : ''}. The Intake and Threshold agents now decide asynchronously — check the Escalations or Policy Review tabs once a decision lands.`}
-              />
-            ) : (
-              <DecisionReceipt
-                tone="amber"
-                icon={<AlertTriangle size={18} className="text-amber-emphasis" />}
-                title="Submitted, but the Yoxa trigger failed"
-                reason={`Recorded as ${result?.submission.id}. The submission is saved, but the workflow wasn't started: ${result?.workflowTriggerError ?? 'unknown error'}. Safe to retry.`}
-              />
-            )}
-          </div>
+            </div>
+          </GlassCard>
         )}
       </div>
 
       <aside className="space-y-4">
-        <div className="rounded-md border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-semibold text-fg">What happens next</h2>
-          <ol className="space-y-3">
-            {STEPS.map((s, i) => (
-              <li key={s.title} className="flex gap-3">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-mono text-fg-subtle">
-                  {i + 1}
-                </span>
-                <div>
-                  <div className="text-sm font-medium text-fg">{s.title}</div>
-                  <div className="text-xs leading-relaxed text-fg-muted">{s.body}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <GlassCard className="p-4">
+          <h2 className="mb-4 text-sm font-semibold text-fg">What happens next</h2>
+          {stage === 'idle' ? (
+            <Timeline>
+              <TimelineStep icon={ScanSearch} tone="blue" title="Classify the change" pending>
+                Intake Agent reads the diff, assigns a risk category, and computes blast radius against
+                the service dependency graph.
+              </TimelineStep>
+              <TimelineStep icon={ShieldQuestion} tone="amber" title="Check trust boundary" pending>
+                Threshold Agent weighs the Judgment Ledger evidence for that category against the
+                current human-approved trust boundary.
+              </TimelineStep>
+              <TimelineStep icon={Zap} tone="teal" title="Ship or escalate" pending isLast>
+                Auto-approved changes deploy immediately. Anything else routes to a Senior Approver
+                with full reasoning attached.
+              </TimelineStep>
+            </Timeline>
+          ) : (
+            <Timeline>
+              <TimelineStep icon={Send} tone="blue" title="Change submitted" meta={stage === 'running' ? undefined : 'done'}>
+                Recorded in the Judgment Ledger{result ? ` as ${result.submission.id}` : ''}.
+              </TimelineStep>
+              <TimelineStep
+                icon={Zap}
+                tone={stage === 'error' ? 'red' : result?.workflowTriggered ? 'teal' : stage === 'running' ? 'amber' : 'red'}
+                title={
+                  stage === 'running'
+                    ? 'Triggering Yoxa workflow…'
+                    : result?.workflowTriggered
+                      ? 'Workflow triggered'
+                      : 'Trigger failed'
+                }
+                pending={stage === 'running'}
+                isLast={stage !== 'done' || !result?.workflowTriggered}
+              >
+                {stage === 'running'
+                  ? 'Sending the change to the Intake Agent…'
+                  : result?.workflowTriggered
+                    ? `Yoxa run ${result.submission.workflow_run_id ?? '—'} is now processing this deploy.`
+                    : (submitError ?? result?.workflowTriggerError ?? 'Unknown error — safe to retry.')}
+              </TimelineStep>
+              {stage === 'done' && result?.workflowTriggered && (
+                <TimelineStep icon={Clock} tone="neutral" title="Awaiting decision" pending isLast>
+                  Check the Escalations or Policy Review tab once the Threshold Agent responds.
+                </TimelineStep>
+              )}
+            </Timeline>
+          )}
+        </GlassCard>
 
-        <div className="rounded-md border border-border bg-surface p-4">
+        <GlassCard className="p-4">
           <div className="mb-2 text-xs text-fg-muted">Predicted category</div>
           <StatusBadge tone={boundary.status === 'auto-approve trusted' ? 'teal' : 'amber'}>
             {sample.category}
           </StatusBadge>
           <p className="mt-2 text-xs leading-relaxed text-fg-subtle">{boundary.reasoning}</p>
-        </div>
+        </GlassCard>
 
         <button
           onClick={handleSubmit}
           disabled={stage === 'running'}
-          className="w-full rounded-md bg-amber px-4 py-2.5 text-sm font-semibold text-canvas-inset transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="w-full rounded-md bg-amber px-4 py-2.5 text-sm font-semibold text-canvas-inset shadow-[0_4px_16px_rgba(210,153,34,0.25)] transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {stage === 'running' ? 'Submitting…' : 'Submit for deploy'}
         </button>
@@ -201,30 +213,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <div className="mb-1 text-[11px] uppercase tracking-wide text-fg-subtle">{label}</div>
       {children}
-    </div>
-  )
-}
-
-function DecisionReceipt({
-  tone,
-  icon,
-  title,
-  reason,
-}: {
-  tone: 'teal' | 'amber' | 'red'
-  icon: React.ReactNode
-  title: string
-  reason: string
-}) {
-  const border = tone === 'teal' ? 'border-teal/40' : tone === 'amber' ? 'border-amber/40' : 'border-red/40'
-  const bg = tone === 'teal' ? 'bg-teal-subtle' : tone === 'amber' ? 'bg-amber-subtle' : 'bg-red-subtle'
-  return (
-    <div className={`flex gap-3 rounded-md border ${border} ${bg} p-3`}>
-      {icon}
-      <div>
-        <div className="text-sm font-semibold text-fg">{title}</div>
-        <div className="mt-0.5 text-xs leading-relaxed text-fg-muted">{reason}</div>
-      </div>
     </div>
   )
 }

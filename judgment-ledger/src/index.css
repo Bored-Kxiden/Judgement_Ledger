@@ -38,6 +38,7 @@ body {
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
 ::selection {
@@ -46,4 +47,98 @@ body {
 
 * {
   scrollbar-color: var(--color-border) transparent;
+}
+
+/* ===================================================================
+   GLASS SYSTEM
+   Layered frosted glass: translucent fill + heavy blur/saturate over
+   the blurred background orbs, a hairline border, an inset top
+   highlight, and a soft drop shadow. The status palette (amber/teal/
+   red) already carries meaning app-wide, so orb hues are drawn from
+   the same three so the ambient light never introduces a 4th color.
+   =================================================================== */
+:root {
+  --glass-blur: blur(28px) saturate(150%);
+  --glass-fill: color-mix(in srgb, var(--color-surface) 58%, transparent);
+  --glass-fill-strong: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-shadow-hover:
+    0 16px 44px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass {
+  background-color: var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background-color: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-hover {
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
+}
+.glass-hover:hover {
+  box-shadow: var(--glass-shadow-hover);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ---------- Background gradient orbs ---------- */
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.35;
+  will-change: transform;
+  animation: orb-float 20s ease-in-out infinite alternate;
+}
+.bg-orb--amber {
+  width: 560px;
+  height: 560px;
+  top: -160px;
+  left: -100px;
+  background: radial-gradient(circle at 30% 30%, var(--color-amber) 0%, transparent 70%);
+}
+.bg-orb--teal {
+  width: 520px;
+  height: 520px;
+  bottom: -160px;
+  right: -100px;
+  background: radial-gradient(circle at 60% 40%, var(--color-teal) 0%, transparent 70%);
+  animation-delay: -7s;
+}
+.bg-orb--red {
+  width: 420px;
+  height: 420px;
+  top: 40%;
+  left: 55%;
+  opacity: 0.16;
+  background: radial-gradient(circle at 50% 50%, var(--color-red) 0%, transparent 70%);
+  animation-delay: -13s;
+}
+@keyframes orb-float {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(30px, -24px, 0) scale(1.06); }
+  100% { transform: translate3d(-24px, 16px, 0) scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-orb { animation: none; }
 }
