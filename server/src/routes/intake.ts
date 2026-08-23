@@ -42,7 +42,7 @@ intakeRouter.get('/:submissionId/intake-context', async (req, res) => {
 
   const { data: boundary, error: boundaryErr } = await supabase
     .from('trust_boundaries')
-    .select('*')
+    .select('category, status, min_sample_required, current_sample_size, confidence_floor, corrections, correction_severity, recommendation, reasoning')
     .eq('category', category)
     .single()
   if (boundaryErr) return res.status(404).json({ error: `unknown category "${category}"` })

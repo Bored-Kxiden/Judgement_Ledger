@@ -7,7 +7,7 @@ info:
     radius (from the service dependency graph) and matched Judgment Ledger
     history for the category the agent has already assigned to a submission.
 servers:
-  - url: https://judgment-ledger-server.onrender.com
+  - url: https://judgement-ledger.onrender.com
 security:
   - apiKeyAuth: []
 paths:
@@ -22,7 +22,7 @@ paths:
           description: The submission ID to fetch intake context for.
           schema:
             type: string
-          example: SUB-88214
+          example: SUB-71092
         - name: category
           in: query
           required: true
