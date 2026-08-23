@@ -1,6 +1,6 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
-# In the Render dashboard: New -> Blueprint -> point at this repo, root "server".
-# Render reads this file and provisions the service below. Env vars marked
+# In the Render dashboard: New -> Blueprint -> point at this repo (root).
+# Render reads this file and provisions both services below. Env vars marked
 # `sync: false` are prompted for in Render's UI, never stored in this file.
 
 services:
@@ -29,3 +29,12 @@ services:
         sync: false
       - key: YOXA_HITL_RESPONSE_SECRET
         sync: false
+
+  - type: web
+    name: judgment-ledger-ui
+    runtime: static
+    rootDir: judgment-ledger
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    # HashRouter is used specifically so no SPA rewrite rule is needed here —
+    # every route is a URL fragment (#/escalation), served by the same index.html.
