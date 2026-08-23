@@ -40,7 +40,8 @@ async function triggerYoxaWorkflow(
     })
     const body = await response.json().catch(() => null)
     if (!response.ok) {
-      return { ok: false, error: `Yoxa trigger returned HTTP ${response.status}` }
+      const detail = body?.error?.message ?? body?.error?.code ?? JSON.stringify(body)
+      return { ok: false, error: `Yoxa trigger returned HTTP ${response.status}: ${detail}` }
     }
     return { ok: true, workflowRunId: body?.workflow_run_id ?? null }
   } catch (err) {
